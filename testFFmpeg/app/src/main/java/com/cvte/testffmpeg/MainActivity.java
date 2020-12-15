@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = (TextView) findViewById(R.id.sample_text);
         tv.setText(stringFromJNI());
 
-        open("/sdcard/1080.mp4",this);
+        //open("/sdcard/1080.mp4",this);
     }
 
     private void requestUserPermissions() {
