@@ -7,4 +7,6 @@
 
 ## 项目进度
 ### 2020:12:13 编译ffmpeg源码，导入头文件和库文件,初始化Android studio工程  
+### 2020:12:15 完成解封装操作，成功读取到video frame并且获得AVPacket数据  
+
 
