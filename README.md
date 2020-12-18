@@ -5,6 +5,7 @@
 ----
 NDK 版本 14b https://developer.android.com/ndk/downloads/older_releases?hl=zh-cn  
 ffmpeg 版本 FFmpeg 3.4.8 "Cantor" https://ffmpeg.org/download.html#releases  
+  
   解码性能测试：  
   - 1.软解码 单线程: 帧率 20fps      内存 27M    CPU使用率 12%  
   - 2.软解码 8线程:  帧率 95-110fps  内存 77M    CPU使用率 83%  
