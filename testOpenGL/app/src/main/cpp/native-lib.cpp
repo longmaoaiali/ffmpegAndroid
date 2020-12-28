@@ -88,6 +88,11 @@ Java_com_cvte_testopengl_Xplayer_open(JNIEnv *env, jobject instance, jstring url
 
     // TODO
     LOGD("open url is %s",url);
+    FILE *fp = fopen(url,"rb");
+    if(!fp){
+        LOGD("open file %s failed!",url);
+        return;
+    }
     //获取原始窗口
     ANativeWindow *nwin = ANativeWindow_fromSurface(env,surface);
     //1 display的创建和初始化
@@ -262,9 +267,15 @@ Java_com_cvte_testopengl_Xplayer_open(JNIEnv *env, jobject instance, jstring url
     for(int i=0;i<10000;i++)
     {
 
-    memset(buf[0],i,width*height);
-    memset(buf[1],i,width*height/4);
-    memset(buf[2],i,width*height/4);
+    //memset(buf[0],i,width*height);
+    //memset(buf[1],i,width*height/4);
+    //memset(buf[2],i,width*height/4);
+        // 420P yyyyyyyy uu vv
+    if(feof(fp) == 0){
+        fread(buf[0],1,width*height,fp);
+        fread(buf[1],1,width*height/4,fp);
+        fread(buf[2],1,width*height/4,fp);
+    }
 
     //激活第一层纹理 并绑定到创建的第一层纹理
     glActiveTexture(GL_TEXTURE0);
