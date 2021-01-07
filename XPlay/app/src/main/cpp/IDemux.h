@@ -7,9 +7,10 @@
 
 #include "XData.h"
 #include "XThread.h"
+#include "IObserver.h"
 
 //定义解封装接口
-class IDemux: public XThread {
+class IDemux: public IObserver {
 public:
     //读取一帧数据 ，数据由调用者清理
     virtual XData Read() = 0;
