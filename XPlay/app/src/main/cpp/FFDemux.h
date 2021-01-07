@@ -10,7 +10,7 @@
 
 struct AVFormatContext;
 
-class FFDemux : public IDemux{
+class FFDemux : public IDemux {
 public:
     FFDemux();
 

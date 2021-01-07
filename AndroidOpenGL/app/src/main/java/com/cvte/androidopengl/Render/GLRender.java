@@ -4,6 +4,9 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -21,26 +24,64 @@ public class GLRender implements GLSurfaceView.Renderer{
     float rotateTri, rotateQuad;
 
     //三角形的三个顶点
-    private IntBuffer triggerBuffer = IntBuffer.wrap(new int[]{
+    private int[] mTriggerBuffer = new int[]{
             0,one,0,//上顶点
             -one,-one,0,//左下点
             one,-one,0,//右下点
-    }) ;
+    };
 
     //正方形的四个顶点
-    private IntBuffer quaterBuffer = IntBuffer.wrap(new int[]{
+    private int[] mQuaterBuffer = new int[]{
             one,one,0,
             -one,one,0,
             one,-one,0,
             -one,-one,0
-    });
+    };
 
     //三角形的顶点颜色值(r,g,b,a)
-    private IntBuffer colorBuffer = IntBuffer.wrap(new int[]{
+    private int[] mColorBuffer = new int[]{
             one,0,0,one,
             0,one,0,one,
             0,0,one,one,
-    });
+    };
+
+    IntBuffer colorBuffer;
+    IntBuffer quaterBuffer;
+    IntBuffer triggerBuffer;
+
+    public GLRender(){
+        colorBuffer = bufferUtil(mColorBuffer);
+        quaterBuffer = bufferUtil(mQuaterBuffer);
+        triggerBuffer = bufferUtil(mTriggerBuffer);
+
+    }
+
+    public IntBuffer bufferUtil(int []arr) {
+        IntBuffer buffer;
+
+        ByteBuffer qbb = ByteBuffer.allocateDirect(arr.length * 4);
+        qbb.order(ByteOrder.nativeOrder());
+
+        buffer = qbb.asIntBuffer();
+        buffer.put(arr);
+        buffer.position(0);
+
+        return buffer;
+    }
+
+    public FloatBuffer bufferUtil(float []arr){
+        FloatBuffer buffer;
+
+        ByteBuffer qbb = ByteBuffer.allocateDirect(arr.length * 4);
+        qbb.order(ByteOrder.nativeOrder());
+
+        buffer = qbb.asFloatBuffer();
+        buffer.put(arr);
+        buffer.position(0);
+
+        return buffer;
+    }
+
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -107,7 +148,13 @@ public class GLRender implements GLSurfaceView.Renderer{
         //取消顶点设置
         gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
 
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         rotateTri += 0.5f;
         rotateQuad += 0.5f;
+
     }
 }

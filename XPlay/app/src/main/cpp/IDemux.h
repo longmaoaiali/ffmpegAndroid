@@ -6,9 +6,10 @@
 #define XPLAY_IDEMUX_H
 
 #include "XData.h"
+#include "XThread.h"
 
 //定义解封装接口
-class IDemux {
+class IDemux: public XThread {
 public:
     //读取一帧数据 ，数据由调用者清理
     virtual XData Read() = 0;
@@ -17,6 +18,8 @@ public:
 
     //总时长 ms
     int totalMs = 0;
+protected:
+    virtual void Main();
 };
 
 
