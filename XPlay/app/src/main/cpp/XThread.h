@@ -1,26 +1,29 @@
-//
-// Created by user on 2021/1/6.
-//
 
 #ifndef XPLAY_XTHREAD_H
 #define XPLAY_XTHREAD_H
 
+//sleep 毫秒
 void XSleep(int mis);
-//C++ std11
-class XThread {
+
+//c++ 11 线程库
+class XThread
+{
 public:
-    //开启 退出线程
+    //启动线程
     virtual void Start();
+
+    //通过控制isExit安全停止线程（不一定成功）
     virtual void Stop();
 
     //入口主函数
-    virtual void Main(){}
+    virtual void Main() {}
 
 protected:
     bool isExit = false;
-    bool isRunning = false;
+    bool isRuning = false;
 private:
     void ThreadMain();
+
 };
 
 

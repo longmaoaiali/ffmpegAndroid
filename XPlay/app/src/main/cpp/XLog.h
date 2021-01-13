@@ -1,11 +1,7 @@
-//
-// Created by user on 2021/1/5.
-//
+
 
 #ifndef XPLAY_XLOG_H
 #define XPLAY_XLOG_H
-
-
 
 class XLog {
 
@@ -19,6 +15,9 @@ class XLog {
 #define XLOGD(...) printf("XPlay",__VA_ARGS__)
 #define XLOGI(...) printf("XPlay",__VA_ARGS__)
 #define XLOGE(...) printf("XPlay",__VA_ARGS__)
+
 #endif
+
+
 
 #endif //XPLAY_XLOG_H

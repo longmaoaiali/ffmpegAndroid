@@ -1,26 +1,33 @@
-//
-// Created by user on 2021/1/5.
-//
+
 
 #ifndef XPLAY_FFDEMUX_H
 #define XPLAY_FFDEMUX_H
 
 
 #include "IDemux.h"
-
 struct AVFormatContext;
 
-class FFDemux : public IDemux {
+class FFDemux: public IDemux {
 public:
-    FFDemux();
 
-    //打开文件 或者流媒体 rmtp http rtsp
+    //打开文件，或者流媒体 rmtp http rtsp
     virtual bool Open(const char *url);
-    //读取一帧数据 ，数据由调用者清理
+
+    //获取视频参数
+    virtual XParameter GetVPara();
+
+    //获取音频参数
+    virtual XParameter GetAPara();
+
+    //读取一帧数据，数据由调用者清理
     virtual XData Read();
 
+    FFDemux();
+
 private:
-    AVFormatContext *avFormatContext = 0;
+    AVFormatContext *ic = 0;
+    int audioStream = 1;
+    int videoStream = 0;
 };
 
 
