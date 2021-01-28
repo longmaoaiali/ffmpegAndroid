@@ -5,6 +5,7 @@
 #include "XLog.h"
 #include "FFDecode.h"
 #include "XEGL.h"
+#include "XShader.h"
 #include <android/native_window_jni.h>
 
 class TestObs:public IObserver
@@ -71,5 +72,7 @@ Java_com_cvte_xplay_XPlay_InitView(JNIEnv *env, jobject instance, jobject surfac
     // 获取到窗口的对象
     ANativeWindow *win = ANativeWindow_fromSurface(env,surface);
     XEGL::Get()->Init(win);
+    XShader shader;
+    shader.Init();
 
 }
