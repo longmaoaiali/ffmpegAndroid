@@ -9,13 +9,16 @@ import android.view.SurfaceView;
 import java.io.File;
 import java.io.IOException;
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
 import androidx.annotation.NonNull;
 
 /**
  * Created by user on 2021/1/14.
  */
 
-public class XPlay extends GLSurfaceView implements SurfaceHolder.Callback {
+public class XPlay extends GLSurfaceView implements SurfaceHolder.Callback,GLSurfaceView.Renderer {
 
     public XPlay(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -26,6 +29,7 @@ public class XPlay extends GLSurfaceView implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder holder) {
         //传递窗口句柄到C++
         InitView(holder.getSurface());
+        setRenderer(this);
     }
 
     @Override
@@ -40,4 +44,19 @@ public class XPlay extends GLSurfaceView implements SurfaceHolder.Callback {
 
 
     public native void InitView(Object surface);
+
+    @Override
+    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+
+    }
+
+    @Override
+    public void onSurfaceChanged(GL10 gl, int width, int height) {
+
+    }
+
+    @Override
+    public void onDrawFrame(GL10 gl) {
+
+    }
 }

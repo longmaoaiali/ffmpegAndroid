@@ -1,0 +1,384 @@
+diff --git a/XPlay/app/src/main/cpp/FFdecode.cpp b/XPlay/app/src/main/cpp/FFdecode.cpp
+index 73901bc..bbd5311 100644
+--- a/XPlay/app/src/main/cpp/FFdecode.cpp
++++ b/XPlay/app/src/main/cpp/FFdecode.cpp
+@@ -81,9 +81,18 @@ XData FFDecode::RecvFrame()
+     XData d;
+     d.data = (unsigned char *)frame;
+     if(codec->codec_type == AVMEDIA_TYPE_VIDEO)
++    {
+         d.size = (frame->linesize[0] + frame->linesize[1] + frame->linesize[2])*frame->height;
++        d.width = frame->width;
++        d.height = frame->height;
++    }
+     else
++    {
+         //样本字节数 * 单通道样本数 * 通道数
+         d.size = av_get_bytes_per_sample((AVSampleFormat)frame->format)*frame->nb_samples*2;
++    }
++
++    //复制frame解码后的数据
++    memcpy(d.datas,frame->data, sizeof(d.datas));
+     return d;
+ }
+\ No newline at end of file
+diff --git a/XPlay/app/src/main/cpp/GLVideoView.cpp b/XPlay/app/src/main/cpp/GLVideoView.cpp
+index b52e340..153e90f 100644
+--- a/XPlay/app/src/main/cpp/GLVideoView.cpp
++++ b/XPlay/app/src/main/cpp/GLVideoView.cpp
+@@ -3,3 +3,22 @@
+ //
+ 
+ #include "GLVideoView.h"
++#include "XTexture.h"
++
++void GLVideoView::SetRender(void *win)
++{
++    view = win;
++}
++
++void GLVideoView::Render(XData data)
++{
++    if(!view) return;
++
++    if(!txt)
++    {
++        txt = XTexture::Create();
++        txt->Init(view);
++    }
++    txt->Draw(data.datas,data.width,data.height);
++
++}
+\ No newline at end of file
+diff --git a/XPlay/app/src/main/cpp/GLVideoView.h b/XPlay/app/src/main/cpp/GLVideoView.h
+index 1fa947b..466b767 100644
+--- a/XPlay/app/src/main/cpp/GLVideoView.h
++++ b/XPlay/app/src/main/cpp/GLVideoView.h
+@@ -6,8 +6,19 @@
+ #define XPLAY_GLVIDEOVIEW_H
+ 
+ 
+-class GLVideoView {
++#include "XData.h"
++#include "IVideoView.h"
+ 
++class XTexture;
++
++class GLVideoView : public IVideoView {
++public:
++    virtual void SetRender(void *win);
++    virtual void Render(XData data);
++
++protected:
++    void *view = 0;
++    XTexture *txt = 0;
+ };
+ 
+ 
+diff --git a/XPlay/app/src/main/cpp/IVideoView.cpp b/XPlay/app/src/main/cpp/IVideoView.cpp
+index 9347a51..dc8b86d 100644
+--- a/XPlay/app/src/main/cpp/IVideoView.cpp
++++ b/XPlay/app/src/main/cpp/IVideoView.cpp
+@@ -3,3 +3,7 @@
+ //
+ 
+ #include "IVideoView.h"
++
++void IVideoView::Update(XData data){
++    this->Render(data);
++}
+\ No newline at end of file
+diff --git a/XPlay/app/src/main/cpp/IVideoView.h b/XPlay/app/src/main/cpp/IVideoView.h
+index fbd4507..0a95698 100644
+--- a/XPlay/app/src/main/cpp/IVideoView.h
++++ b/XPlay/app/src/main/cpp/IVideoView.h
+@@ -6,8 +6,14 @@
+ #define XPLAY_IVIDEOVIEW_H
+ 
+ 
+-class IVideoView {
++#include "XData.h"
++#include "IObserver.h"
+ 
++class IVideoView : public IObserver{
++public:
++    virtual void SetRender(void *win) = 0;
++    virtual void Render(XData data) = 0;
++    virtual void Update(XData data);
+ };
+ 
+ 
+diff --git a/XPlay/app/src/main/cpp/XData.h b/XPlay/app/src/main/cpp/XData.h
+index 4b25468..4af2793 100644
+--- a/XPlay/app/src/main/cpp/XData.h
++++ b/XPlay/app/src/main/cpp/XData.h
+@@ -6,6 +6,10 @@
+ 
+ struct XData {
+     unsigned char *data = 0;
++    //avframe解码后的数据
++    unsigned char *datas[8] = {0};
++    int width = 0;
++    int height = 0;
+     int size = 0;
+     bool isAudio = false;
+     void Drop();
+diff --git a/XPlay/app/src/main/cpp/XEGL.cpp b/XPlay/app/src/main/cpp/XEGL.cpp
+index 76d266b..04e221e 100644
+--- a/XPlay/app/src/main/cpp/XEGL.cpp
++++ b/XPlay/app/src/main/cpp/XEGL.cpp
+@@ -11,6 +11,15 @@ public:
+     EGLDisplay display = EGL_NO_DISPLAY;
+     EGLSurface surface = EGL_NO_SURFACE;
+     EGLContext context = EGL_NO_CONTEXT;
++    virtual void Draw()
++    {
++        if(display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE)
++        {
++            return;
++        }
++        eglSwapBuffers(display,surface);
++    }
++
+     virtual bool Init(void *win){
+         ANativeWindow *nwin = (ANativeWindow *)win;
+ 
+diff --git a/XPlay/app/src/main/cpp/XEGL.h b/XPlay/app/src/main/cpp/XEGL.h
+index 1d2020b..07d1c03 100644
+--- a/XPlay/app/src/main/cpp/XEGL.h
++++ b/XPlay/app/src/main/cpp/XEGL.h
+@@ -9,6 +9,7 @@
+ class XEGL {
+ public:
+     virtual bool Init(void *win)=0;
++    virtual void Draw() = 0;
+     static XEGL *Get();
+ protected:
+     XEGL(){}
+diff --git a/XPlay/app/src/main/cpp/XShader.cpp b/XPlay/app/src/main/cpp/XShader.cpp
+index d9ac3ab..b274ef8 100644
+--- a/XPlay/app/src/main/cpp/XShader.cpp
++++ b/XPlay/app/src/main/cpp/XShader.cpp
+@@ -150,4 +150,45 @@ bool XShader::Init()
+     XLOGI("初始化Shader成功！");
+ 
+     return true;
++}
++
++void XShader::Draw()
++{
++    if(!program)
++        return;
++    //三维绘制
++    glDrawArrays(GL_TRIANGLE_STRIP,0,4);
++}
++
++void XShader::GetTexture(unsigned int index,int width,int height, unsigned char* buf)
++{
++    //第一次需要实现材质初始化
++    if(texts[index] == 0)
++    {
++        //材质初始化
++        glGenTextures(1,&texts[index]);
++
++        //设置纹理属性
++        glBindTexture(GL_TEXTURE_2D,texts[index]);
++        //缩小的过滤器
++        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
++        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
++        //设置纹理的格式和大小
++        glTexImage2D(GL_TEXTURE_2D,
++                     0,           //细节基本 0默认
++                     GL_LUMINANCE,//gpu内部格式 亮度，灰度图
++                     width,height, //拉升到全屏
++                     0,             //边框
++                     GL_LUMINANCE,//数据的像素格式 亮度，灰度图 要与上面一致
++                     GL_UNSIGNED_BYTE, //像素的数据类型
++                     NULL                    //纹理的数据
++        );
++    }
++
++
++    //激活第1层纹理,绑定到创建的opengl纹理
++    glActiveTexture(GL_TEXTURE0+index);
++    glBindTexture(GL_TEXTURE_2D,texts[index]);
++    //替换纹理内容
++    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,width,height,GL_LUMINANCE,GL_UNSIGNED_BYTE,buf);
+ }
+\ No newline at end of file
+diff --git a/XPlay/app/src/main/cpp/XShader.h b/XPlay/app/src/main/cpp/XShader.h
+index e61d8cc..998616c 100644
+--- a/XPlay/app/src/main/cpp/XShader.h
++++ b/XPlay/app/src/main/cpp/XShader.h
+@@ -9,11 +9,14 @@
+ class XShader {
+ public:
+     virtual bool Init();
+-
++    //获取材质并映射到内存
++    virtual void GetTexture(unsigned int index,int width,int height, unsigned char* buf);
++    virtual void Draw();
+ protected:
+     unsigned int vsh = 0;
+     unsigned int fsh = 0;
+     unsigned int program = 0;
++    unsigned int texts[100] = {0};
+ };
+ 
+ 
+diff --git a/XPlay/app/src/main/cpp/XTexture.cpp b/XPlay/app/src/main/cpp/XTexture.cpp
+index 1f9d4b8..88e85b1 100644
+--- a/XPlay/app/src/main/cpp/XTexture.cpp
++++ b/XPlay/app/src/main/cpp/XTexture.cpp
+@@ -3,3 +3,36 @@
+ //
+ 
+ #include "XTexture.h"
++#include "XLog.h"
++#include "XShader.h"
++#include "XEGL.h"
++
++class CXTexture:public XTexture
++{
++public:
++    XShader shader;
++    bool Init(void* win){
++        if(!win){
++            XLOGE("XTexture Init failed!");
++            return false;
++        }
++        if(!XEGL::Get()->Init(win))return false;
++        shader.Init();
++        return true;
++    }
++
++    void Draw(unsigned char *data[],int width,int height)
++    {
++        shader.GetTexture(0,width,height,data[0]); //Y
++        shader.GetTexture(1,width/2,height/2,data[1]); //Y
++        shader.GetTexture(2,width/2,height/2,data[2]); //Y
++
++        shader.Draw();
++        XEGL::Get()->Draw();
++    }
++};
++
++XTexture *XTexture::Create()
++{
++    return new CXTexture();
++}
+\ No newline at end of file
+diff --git a/XPlay/app/src/main/cpp/XTexture.h b/XPlay/app/src/main/cpp/XTexture.h
+index 554b54e..11e4a8b 100644
+--- a/XPlay/app/src/main/cpp/XTexture.h
++++ b/XPlay/app/src/main/cpp/XTexture.h
+@@ -6,8 +6,13 @@
+ #define XPLAY_XTEXTURE_H
+ 
+ 
+-class XTexture {
++#include <asm/signal.h>
+ 
++class XTexture {
++public:
++    static XTexture *Create();
++    virtual bool Init(void *win) = 0;
++    virtual void Draw(unsigned char *data[],int width,int height) = 0;
+ };
+ 
+ 
+diff --git a/XPlay/app/src/main/cpp/native-lib.cpp b/XPlay/app/src/main/cpp/native-lib.cpp
+index c89f64f..8ab31a8 100644
+--- a/XPlay/app/src/main/cpp/native-lib.cpp
++++ b/XPlay/app/src/main/cpp/native-lib.cpp
+@@ -6,6 +6,8 @@
+ #include "FFDecode.h"
+ #include "XEGL.h"
+ #include "XShader.h"
++#include "IVideoView.h"
++#include "GLVideoView.h"
+ #include <android/native_window_jni.h>
+ 
+ class TestObs:public IObserver
+@@ -17,7 +19,7 @@ public:
+     }
+ };
+ 
+-
++IVideoView *view = NULL;
+ 
+ extern "C"
+ JNIEXPORT jstring
+@@ -48,6 +50,8 @@ Java_com_cvte_xplay_MainActivity_stringFromJNI(
+     de->AddObs(vdecode);
+     de->AddObs(adecode);
+ 
++    view = new GLVideoView();
++    vdecode->AddObs(view);
+     //vdecode->Open();
+     de->Start();
+     vdecode->Start();
+@@ -65,14 +69,17 @@ Java_com_cvte_xplay_MainActivity_stringFromJNI(
+ 
+     return env->NewStringUTF(hello.c_str());
+ }
++
++
+ extern "C"
+ JNIEXPORT void JNICALL
+ Java_com_cvte_xplay_XPlay_InitView(JNIEnv *env, jobject instance, jobject surface) {
+ 
+     // 获取到窗口的对象
+     ANativeWindow *win = ANativeWindow_fromSurface(env,surface);
+-    XEGL::Get()->Init(win);
+-    XShader shader;
+-    shader.Init();
++//    XEGL::Get()->Init(win);
++//    XShader shader;
++//    shader.Init();
++    view->SetRender(win);
+ 
+ }
+\ No newline at end of file
+diff --git a/XPlay/app/src/main/java/com/cvte/xplay/MainActivity.java b/XPlay/app/src/main/java/com/cvte/xplay/MainActivity.java
+index a6ff7d9..1b440a3 100644
+--- a/XPlay/app/src/main/java/com/cvte/xplay/MainActivity.java
++++ b/XPlay/app/src/main/java/com/cvte/xplay/MainActivity.java
+@@ -29,9 +29,9 @@ public class MainActivity extends AppCompatActivity {
+         requestPermissions();
+         setContentView(R.layout.activity_main);
+ 
+-        // Example of a call to a native method
+-        //TextView tv = (TextView) findViewById(R.id.sample_text);
+-        //tv.setText(stringFromJNI());
++        //Example of a call to a native method
++        TextView tv = (TextView) findViewById(R.id.sample_text);
++        tv.setText(stringFromJNI());
+     }
+ 
+     private void requestPermissions() {
+diff --git a/XPlay/app/src/main/res/layout/activity_main.xml b/XPlay/app/src/main/res/layout/activity_main.xml
+index 5cbb577..2a6a72c 100644
+--- a/XPlay/app/src/main/res/layout/activity_main.xml
++++ b/XPlay/app/src/main/res/layout/activity_main.xml
+@@ -6,15 +6,11 @@
+     android:layout_height="match_parent"
+     tools:context="com.cvte.xplay.MainActivity">
+ 
+-    <!--<TextView-->
+-        <!--android:id="@+id/sample_text"-->
+-        <!--android:layout_width="wrap_content"-->
+-        <!--android:layout_height="wrap_content"-->
+-        <!--android:text="Hello World!"-->
+-        <!--app:layout_constraintBottom_toBottomOf="parent"-->
+-        <!--app:layout_constraintLeft_toLeftOf="parent"-->
+-        <!--app:layout_constraintRight_toRightOf="parent"-->
+-        <!--app:layout_constraintTop_toTopOf="parent" />-->
++    <TextView
++        android:id="@+id/sample_text"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:text="Hello World!"/>
+ 
+     <com.cvte.xplay.XPlay
+         android:layout_width="match_parent"

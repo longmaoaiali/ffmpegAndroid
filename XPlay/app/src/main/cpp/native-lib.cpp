@@ -7,6 +7,9 @@
 #include "XEGL.h"
 #include "XShader.h"
 #include <android/native_window_jni.h>
+#include "XShader.h"
+#include "IVideoView.h"
+#include "GLVideoView.h"
 
 class TestObs:public IObserver
 {
@@ -18,6 +21,7 @@ public:
 };
 
 
+IVideoView *view = NULL;
 
 extern "C"
 JNIEXPORT jstring
@@ -48,6 +52,8 @@ Java_com_cvte_xplay_MainActivity_stringFromJNI(
     de->AddObs(vdecode);
     de->AddObs(adecode);
 
+    view = new GLVideoView();
+    vdecode->AddObs(view);
     //vdecode->Open();
     de->Start();
     vdecode->Start();
