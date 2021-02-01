@@ -53,6 +53,8 @@ add_library( # Sets the name of the library.
              src/main/cpp/XTexture.cpp
              src/main/cpp/XEGL.cpp
              src/main/cpp/XShader.cpp
+             src/main/cpp/FFResample.cpp
+             src/main/cpp/IResample.cpp
              )
 
 # Searches for a specified prebuilt library and stores the path as a
