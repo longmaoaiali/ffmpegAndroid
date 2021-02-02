@@ -10,6 +10,8 @@
 #include "XShader.h"
 #include "IVideoView.h"
 #include "GLVideoView.h"
+#include "IResample.h"
+#include "FFResample.h"
 
 class TestObs:public IObserver
 {
@@ -54,6 +56,11 @@ Java_com_cvte_xplay_MainActivity_stringFromJNI(
 
     view = new GLVideoView();
     vdecode->AddObs(view);
+
+    IResample *resample = new FFResample();
+    resample->Open(de->GetAPara());
+    adecode->AddObs(resample);
+
     //vdecode->Open();
     de->Start();
     vdecode->Start();
